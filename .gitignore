@@ -216,3 +216,30 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# exclude data from source control by default
+/data/
+
+# Mac OS-specific storage files
+.DS_Store
+
+# vim
+*.swp
+*.swo
+
+# ---------------------------------------------------------------------------
+# ExtractANES project conventions
+# ---------------------------------------------------------------------------
+
+# Generated notebooks (source of truth is notebooks/*.md; convert with jupytext)
+notebooks/*.ipynb
+!notebooks/.gitkeep
+
+# Notebook / extract run logs
+notebooks/logs/
+
+# HTML codebook browser assets (MathJax etc.); keep the .html itself
+codebook/*_files/
+
+# Scratch / one-off audits (keep untracked)
+notebooks/_*.py
