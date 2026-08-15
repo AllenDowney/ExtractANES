@@ -1,4 +1,4 @@
-.PHONY: clean lint format requirements extract_codebook run_extract run_eda run_eda_lgbt_rights run_eda_immigration run_notebooks sync_culturewar sync_culturewar_codebook
+.PHONY: clean lint format requirements extract_codebook run_extract run_pilot_extract run_panel_extract run_eda run_eda_lgbt_rights run_eda_immigration run_eda_pilot_inventory run_notebooks sync_culturewar sync_culturewar_codebook
 
 #################################################################################
 # GLOBALS                                                                       #
@@ -62,6 +62,23 @@ run_eda_lgbt_rights:
 run_eda_immigration:
 	cd notebooks && $(CONDA_RUN) jupytext --to ipynb eda_immigration.md
 	cd notebooks && $(CONDA_RUN) $(NBCONVERT) eda_immigration.ipynb
+
+
+## Pilot ↔ book CDF crosswalk + inventory (Task 10)
+run_eda_pilot_inventory:
+	cd notebooks && $(CONDA_RUN) python build_pilot_crosswalk.py
+	cd notebooks && $(CONDA_RUN) jupytext --to ipynb eda_pilot_inventory.md
+	cd notebooks && $(CONDA_RUN) $(NBCONVERT) eda_pilot_inventory.ipynb
+
+
+## Build separate ANES Pilot extract HDF (Task 10; does not merge into CDF)
+run_pilot_extract:
+	cd notebooks && $(CONDA_RUN) python make_pilot_extract.py
+
+
+## Build separate ANES 2016–2020–2024 panel extract HDF (Task 11)
+run_panel_extract:
+	cd notebooks && $(CONDA_RUN) python make_panel_extract.py
 
 
 ## Run extract then EDA notebooks
