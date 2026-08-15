@@ -369,3 +369,65 @@ NOTE: most variables in the ANES Timeseries Cumulative Data File that include 19
 **Missing codes:** `0`, `8`, `9`, plus negatives. Code **4** is *not* treated as missing (Hispanic of unknown type).
 
 **Caveats:** Pre-1988 Hispanic origin often from interviewer observation; sparseness / confidentiality for fine types in early years.
+
+---
+
+## Task 10: Midterm Pilot inventory (separate extract)
+
+**EDA / crosswalk:** `notebooks/eda_pilot_inventory.md`, `notebooks/build_pilot_crosswalk.py`  
+**Crosswalk outputs:** `data/processed/anes_pilot_cdf_crosswalk.csv`, `anes_pilot_study_meta.csv`  
+**Extract:** `make run_pilot_extract` → `data/interim/anes_pilot_extract.hdf` (+ `_labels.csv`); log `notebooks/logs/extract_pilot.txt`  
+**Raw:** `data/raw/midterm_pilots/{2022,2019,2018,2016}/`
+
+### Decision so far
+
+Local Pilots are **useful enough** for a small **separate** extract (thermometers / immigration volume / stereotypes), especially midterm years **2022** and **2018**. Do **not** merge into the CDF HDF. Defer **2006** and older Pilots until mode diagnostics on this extract.
+
+| Pilot | N | Book-VCF useful | Highlights |
+|-------|---|-----------------|------------|
+| 2022 | 1,585 | 12/27 | Race FTs + feminists FT + hardworking–lazy 7-pt; no gays FT; no illegal FT |
+| 2019 | 3,165 | 8/27 | `ftillegal`, `immignum`, Muslims FT; not a midterm year |
+| 2018 | 2,500 | 9/27 | `ftgay`, `immignum`, Muslims FT; midterm year |
+| 2016 | 1,200 | 11/27 | `ftgay`, `ftfem`, `immig_numb`, `lazy*`; SPSS `.sav` |
+
+**Mode:** All local Pilots are opt-in online panels — parallel / sensitivity only vs Time Series CDF.
+
+### Extract conventions (`make_pilot_extract.py`)
+
+- Stack years in one HDF (`key=anes`); keep `year`, `pilot`, `source`, `weight`, demogs (`birth_year`, `age`, `cohort=year−age`, `sex`, `race` when present).
+- Book VCF column names where matched (e.g. `VCF0206` Blacks FT). 2022 Blacks/Whites: coalesce `ftblack1`/`ftblack2`, `ftwhite1`/`ftwhite2`.
+- Thermometers: keep 0–100; negatives / skips → missing.
+- Immigration volume stays as `immig_volume` (Pilot 7-cat `immignum` / `immig_numb`) — **not** forced onto CDF `VCF0879` (5/6-cat).
+- 2016 `lazy_*` kept separate from CDF 7-pt hardworking–lazy (`VCF9270`–`VCF9273` from 2022 only).
+- Extra Pilot-only FTs: `ft_immigrants`, `ft_legal_immigrants` (not book VCFs).
+- Weight: Pilot `weight`; values ≤0 → missing.
+
+---
+
+## Task 11: 2016–2020–2024 Panel Merged Study (separate extract)
+
+**Raw:** `data/raw/panel_2016_2020_2024/` (SPSS merged file + `REPEATED_VARIABLES_2016_20_24.csv` + year TS codebooks)  
+**Extract:** `make run_panel_extract` → `data/interim/anes_panel_extract.hdf` (+ `_labels.csv`); log `notebooks/logs/extract_panel.txt`  
+**Study page:** https://electionstudies.org/data-center/2016-2020-2024-panel-merged-study/
+
+### Decision
+
+Build a **long** panel extract (2,839 × 3 waves) kept separate from CDF and Pilot HDFs. Strong book overlap plus transgender battery. Do **not** pool with CDF APC stacks by default.
+
+### Extract conventions (`make_panel_extract.py`)
+
+- Reshape wide V16*/V20*/V24* file → rows keyed by `panel_id` + `year`.
+- Book VCF names where matched (thermometers, `VCF0879`, `VCF9223`, `VCF9270`–`VCF9273`, `VCF0876`/`a`, `VCF0878`).
+- Panel-only columns: `ft_transgender`, `trans_bathroom` (+ str/sum), **`trans_bathroom_restrict`** (H1 derived), `trans_military` (+ str/sum; 2020+), `trans_discrim`, `trans_know_someone` (2020+), `trans_sports_ban` (2024-only), `gay_marriage`, `immig_unauthorized`, `border_security` (2020+).
+- Thermometers 0–100; other scales drop `< 0`.
+- Weights: 2016 `V160102` (post full-sample); 2020 `V200011b` (2016–2020 panel post); 2024 `V240106b` (2016–2024 panel post). Non-positive → missing. Wave Ns with weight: ~2839 / 2670 / 2070.
+- `cohort = year − age`; birth year from restricted year vars when usable, else `year − age`.
+
+### Transgender notes
+
+Bathroom policy and transgender FT repeat 2016–2024. **Raw `trans_bathroom` polarity flips in 2024** — CultureWar should model **`trans_bathroom_restrict`** (1 = restrictive, 0 = inclusive): 2016/2020 `1→1`, `2→0`; 2024 `2→1`, `1→0`, `3→NaN`. Do not use `trans_bathroom_sum` as a cross-wave series (H2). Military service favor/oppose starts 2020 (legacy “gays in military” not in this panel stream). K–12 girls’ sports ban is **2024-only** (`V241373`) and is **not** on the ANES repeated-variables list — still kept in the extract.
+
+### Task 12 (harmonization)
+
+See `codebook/anes_pilot_panel_harmonization.md`. Done for H1–H4: derived bathroom binary; `_sum` audit-only; Pilot `immig_volume` / `lazy_*` stay non-CDF names.
+
