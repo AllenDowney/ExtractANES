@@ -1,0 +1,8 @@
+empiricaldist
+jupyter
+matplotlib
+numpy
+pandas
+pyreadstat
+scipy
+tables
